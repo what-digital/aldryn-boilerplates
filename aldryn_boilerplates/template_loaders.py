@@ -66,11 +66,10 @@ class AppDirectoriesLoader(django.template.loaders.app_directories.Loader):
     def get_template_sources(self, template_name, template_dirs=None):
         return super(AppDirectoriesLoader, self).get_template_sources(
             template_name,
-            _get_boilerplate_app_template_dirs(template_dirs),
         )
 
     def load_template_source(self, template_name, template_dirs=None):
-        return super(AppDirectoriesLoader, self).load_template_source(
+        return super(AppDirectoriesLoader, self).find_template_source(
             template_name,
             _get_boilerplate_app_template_dirs(template_dirs),
         )
