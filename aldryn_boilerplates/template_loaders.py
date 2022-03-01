@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-from .conf import settings
-import django.template.loaders.app_directories
-from django.core.exceptions import ImproperlyConfigured
-try:
-    # Python>=2.7
-    from importlib import import_module
-except ImportError:
-    # Python==2.6
-    import warnings
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        from django.utils.importlib import import_module
-from django.utils._os import safe_join
-
 import os
 import sys
+from importlib import import_module
+from distutils.version import LooseVersion
 
+from django import __version__
+import django.template.loaders.app_directories
+from django.core.exceptions import ImproperlyConfigured, SuspiciousFileOperation
+from django.template import Origin
+from django.template.loader import get_template
+import six
+from django.utils._os import safe_join
+
+from .conf import settings
+
+DJANGO_VERSION = __version__
+DJANGO_20 = LooseVersion(DJANGO_VERSION) >= LooseVersion('2.0')
 
 _cache = None
 
@@ -32,6 +32,8 @@ def _populate_cache():
     # plain ``templates`` folder.
 
     # At compile time, cache the directories to search.
+    if six.PY2:
+        fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
     app_template_dirs = []
     for app in settings.INSTALLED_APPS:
         try:
@@ -45,6 +47,8 @@ def _populate_cache():
             'templates',
         )))
         if os.path.isdir(template_dir):
+            if six.PY2:
+                template_dir = template_dir.decode(fs_encoding)
             app_template_dirs.append(template_dir)
 
     # It won't change, so convert it to a tuple to save memory.
@@ -69,7 +73,9 @@ class AppDirectoriesLoader(django.template.loaders.app_directories.Loader):
         )
 
     def load_template_source(self, template_name, template_dirs=None):
-        return super(AppDirectoriesLoader, self).find_template_source(
+        return super(AppDirectoriesLoader, self).get_template(
             template_name,
-            _get_boilerplate_app_template_dirs(template_dirs),
         )
+
+    def get_dirs(self, template_dirs=None):
+        return _get_boilerplate_app_template_dirs(template_dirs)
