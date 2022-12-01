@@ -41,16 +41,22 @@ def _populate_cache():
             mod = import_module(app)
         except ImportError as e:
             raise ImproperlyConfigured('ImportError %s: %s' % (app, e.args[0]))
-        template_dir = safe_join(os.path.abspath(os.path.join(
-            os.path.dirname(mod.__file__),
-            'boilerplates',
-            '{0}'.format(settings.ALDRYN_BOILERPLATE_NAME),
-            'templates',
-        )))
-        if os.path.isdir(template_dir):
-            if six.PY2:
-                template_dir = template_dir.decode(fs_encoding)
-            app_template_dirs.append(template_dir)
+        try:
+            template_dir = safe_join(os.path.abspath(os.path.join(
+                os.path.dirname(mod.__file__),
+                'boilerplates',
+                '{0}'.format(settings.ALDRYN_BOILERPLATE_NAME),
+                'templates',
+            )))
+            if os.path.isdir(template_dir):
+                if six.PY2:
+                    template_dir = template_dir.decode(fs_encoding)
+                app_template_dirs.append(template_dir)
+        except Exception as e:
+            print mod
+            print app
+            raise e
+
 
     # It won't change, so convert it to a tuple to save memory.
     app_template_dirs = tuple(app_template_dirs)
